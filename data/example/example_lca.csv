@@ -1,0 +1,8 @@
+employer_key,employer_name,soc_code,soc_title,job_title,worksite_city,worksite_state,wage_from,wage_unit,pw_wage_level,case_status,received_date,fiscal_year,calendar_year
+acme analytics,ACME ANALYTICS LLC,15-2051,Data Scientists,Data Scientist,New York,NY,135000,Year,II,Certified,2024-11-04,2025,2024
+acme analytics,ACME ANALYTICS LLC,15-2051,Data Scientists,Senior Data Scientist,New York,NY,168000,Year,III,Certified,2025-02-17,2025,2025
+acme analytics,"Acme Analytics, L.L.C.",15-1252,Software Developers,Software Engineer,Jersey City,NJ,142000,Year,II,Certified,2025-06-02,2025,2025
+blue harbor bank,BLUE HARBOR BANK N.A.,13-2011,Accountants and Auditors,Staff Accountant,New York,NY,78000,Year,I,Certified,2024-10-21,2025,2024
+blue harbor bank,BLUE HARBOR BANK N.A.,15-2051,Data Scientists,Data Scientist II,New York,NY,151000,Year,II,Withdrawn,2025-03-11,2025,2025
+northwind health,NORTHWIND HEALTH INC,15-2051,Data Scientists,Clinical Data Scientist,Boston,MA,128000,Year,II,Certified,2023-12-05,2024,2023
+northwind health,NORTHWIND HEALTH INC,13-2011,Accountants and Auditors,Accountant,Boston,MA,72000,Year,I,Denied,2024-05-14,2024,2024

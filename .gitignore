@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Cleaned data is large; B decides what gets committed vs loaded from GCS
+data/clean/
+data/raw/

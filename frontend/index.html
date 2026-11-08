@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sponsor Trail</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --quiet: #6b6b66; --line: #e3e2dc;
+    --accent: #1f6feb; --accent-soft: #e8f0fe;
+    --lead: #8250df; --researcher: #1a7f37; --writer: #bf5700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --panel: #1f1f1d; --ink: #ecebe6; --quiet: #a3a29b; --line: #34332f;
+      --accent: #58a6ff; --accent-soft: #1b2a40;
+      --lead: #b392f0; --researcher: #56d364; --writer: #ffa657;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+  header { padding: 28px 24px 8px; max-width: 1200px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; }
+  .tagline { color: var(--quiet); margin: 0 0 16px; }
+  .about { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .about div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .about b { display: block; margin-bottom: 4px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px 24px 32px;
+         display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 520px; }
+  section h2 { font-size: 14px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--quiet); }
+  #messages, #trace { flex: 1; overflow-y: auto; padding: 16px; max-height: 70vh; }
+  .msg { margin-bottom: 14px; }
+  .msg.user { text-align: right; }
+  .msg.user span { display: inline-block; background: var(--accent-soft); padding: 8px 12px; border-radius: 12px; }
+  .msg.bot { border-left: 3px solid var(--accent); padding-left: 12px; }
+  .msg.bot table { border-collapse: collapse; font-size: 13px; }
+  .msg.bot th, .msg.bot td { border: 1px solid var(--line); padding: 4px 8px; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+  .samples button { border: 1px solid var(--line); background: transparent; color: var(--ink);
+                    border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+  form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); }
+  textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+             font: inherit; background: var(--bg); color: var(--ink); }
+  form button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 0 18px; font-weight: 600; cursor: pointer; }
+  form button:disabled { opacity: .5; cursor: default; }
+  .agent { margin-bottom: 12px; }
+  .agent > b { font-size: 13px; }
+  .agent.lead > b { color: var(--lead); }
+  .agent.researcher > b { color: var(--researcher); }
+  .agent.writer > b { color: var(--writer); }
+  details { border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; font-size: 13px; }
+  summary { padding: 6px 10px; cursor: pointer; }
+  pre { margin: 0; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; font-size: 12px;
+        border-top: 1px solid var(--line); max-height: 260px; overflow: auto; }
+  .muted { color: var(--quiet); font-size: 13px; }
+  @media (max-width: 820px) {
+    .about { grid-template-columns: 1fr; }
+    main { grid-template-columns: 1fr; padding: 12px 16px 24px; }
+    header { padding: 20px 16px 4px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sponsor Trail</h1>
+  <p class="tagline">哪些雇主真的会帮你办 H-1B，后来还帮办绿卡？用美国政府公开数据查给你看。</p>
+  <div class="about">
+    <div><b>它查什么</b>DOL 的 H-1B 申请（LCA）、USCIS 的批准与拒绝、DOL 的绿卡申请（PERM），覆盖 FY2020 至 FY2026，任何岗位都能查。</div>
+    <div><b>给谁用</b>在美国找工作的国际学生，以及帮他们做职业规划的人。</div>
+    <div><b>怎么用</b>写清楚岗位、地点和年份（例如“2020-25 年”或“去年”）。问题不够具体时它会先追问。右侧可以看到每个 agent 查了什么。</div>
+  </div>
+  <p class="muted" id="status">正在加载数据源…</p>
+</header>
+<main>
+  <section>
+    <h2>对话</h2>
+    <div id="messages"></div>
+    <div class="samples" id="samples"></div>
+    <form id="form">
+      <textarea id="input" rows="2" placeholder="例如：2020-2025 年纽约给 Data Scientist 办 H-1B 最多的公司有哪些？后来有没有办绿卡？"></textarea>
+      <button id="send">发送</button>
+    </form>
+  </section>
+  <section>
+    <h2>Agent 过程（Lead → Researchers → Writer）</h2>
+    <div id="trace"><p class="muted">提问后，这里会按 agent 显示每一步：Lead 的规划、各个 Researcher 跑的 SQL、Writer 的汇总。</p></div>
+  </section>
+</main>
+<script>
+const SAMPLES = [
+  "2020-2025 年纽约给 Data Scientist 办 H-1B 最多的 10 家公司？其中哪些后来办了绿卡？",
+  "去年给会计岗办 H-1B 的公司里，哪些 USCIS 批准率最高？",
+  "我想找个好办签证的工作",
+];
+let sessionId = null;
+const $ = (id) => document.getElementById(id);
+
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  if (role === "user") {
+    const span = document.createElement("span");
+    span.textContent = text;
+    div.appendChild(span);
+  } else {
+    div.innerHTML = DOMPurify.sanitize(marked.parse(text || ""));
+  }
+  $("messages").appendChild(div);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return div;
+}
+
+function pretty(value) {
+  if (typeof value !== "string") return JSON.stringify(value, null, 2);
+  try { return JSON.stringify(JSON.parse(value), null, 2); } catch { return value; }
+}
+
+function renderTrace(calls) {
+  const trace = $("trace");
+  trace.innerHTML = "";
+  if (!calls.length) { trace.innerHTML = '<p class="muted">这一轮没有工具调用。</p>'; return; }
+  const groups = new Map();
+  for (const c of calls) {
+    const key = c.agent || "agent";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(c);
+  }
+  for (const [agent, items] of groups) {
+    const box = document.createElement("div");
+    box.className = "agent " + agent.split("-")[0];
+    const title = document.createElement("b");
+    title.textContent = `${agent} · ${items.length} 步`;
+    box.appendChild(title);
+    for (const c of items) {
+      const d = document.createElement("details");
+      const s = document.createElement("summary");
+      s.textContent = c.args && c.args.sql ? `${c.name}: ${c.args.sql.slice(0, 80)}` : c.name;
+      const pre = document.createElement("pre");
+      pre.textContent = "args: " + pretty(c.args) + "\n\nresult: " + pretty(c.result);
+      d.append(s, pre);
+      box.appendChild(d);
+    }
+    trace.appendChild(box);
+  }
+}
+
+async function send(text) {
+  if (!text.trim()) return;
+  addMessage("user", text);
+  $("input").value = "";
+  $("send").disabled = true;
+  const pending = addMessage("bot", "_正在研究，通常需要 30 秒到 2 分钟…_");
+  try {
+    const res = await fetch("/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, session_id: sessionId }),
+    });
+    const data = await res.json();
+    sessionId = data.session_id;
+    pending.innerHTML = DOMPurify.sanitize(marked.parse(data.response || ""));
+    renderTrace(data.tool_calls || []);
+  } catch (e) {
+    pending.textContent = "请求失败：" + e;
+  } finally {
+    $("send").disabled = false;
+  }
+}
+
+$("form").addEventListener("submit", (e) => { e.preventDefault(); send($("input").value); });
+$("input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send($("input").value); }
+});
+for (const q of SAMPLES) {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = q; b.onclick = () => send(q);
+  $("samples").appendChild(b);
+}
+fetch("/api/status").then(r => r.json()).then(s => {
+  const names = s.sources.map(x => x.name);
+  $("status").textContent = names.length
+    ? `已加载的数据源：${names.join("、")}${names.includes("example") ? "（example 是假数据，仅供测试）" : ""}`
+    : "还没有加载任何数据源。";
+}).catch(() => { $("status").textContent = ""; });
+</script>
+</body>
+</html>

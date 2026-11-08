@@ -1,0 +1,23 @@
+[project]
+name = "sponsor-trail"
+version = "0.1.0"
+description = "Deep Research agent tracing which employers sponsor H-1B and green cards, by job and year"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "litellm>=1.50",
+    "google-cloud-aiplatform>=1.40.0",
+    "python-dotenv>=1.0.0",
+    "duckdb>=1.1",
+    "pandas>=2.2",
+    "pyarrow>=16",
+    "openpyxl>=3.1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
