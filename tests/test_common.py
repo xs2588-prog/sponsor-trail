@@ -8,6 +8,8 @@ def test_normalize_employer_merges_spellings():
     assert normalize_employer("GOOGLE, INC.") == "google"
     assert normalize_employer("Acme Analytics, L.L.C.") == "acme analytics"
     assert normalize_employer("The Goldman Sachs Group, Inc.") == "goldman sachs group"
+    assert normalize_employer("JPMorgan Chase & Co.") == "jpmorgan chase"
+    assert normalize_employer("GOLDMAN SACHS & CO. LLC") == "goldman sachs"
     assert normalize_employer(None) == ""
 
 

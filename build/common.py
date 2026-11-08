@@ -34,7 +34,9 @@ def normalize_employer(name) -> str:
     s = re.sub(r"[^a-z0-9 ]+", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     s = re.sub(r"^the\s+", "", s)
-    return _SUFFIX_RE.sub("", s).strip()
+    s = _SUFFIX_RE.sub("", s).strip()
+    # "JPMorgan Chase & Co." -> "jpmorgan chase and" after the suffix goes: drop the dangling "and"
+    return re.sub(r"\s+and$", "", s).strip()
 
 
 def normalize_soc(code) -> str:
@@ -63,5 +65,5 @@ def write_clean(df: pd.DataFrame, name: str) -> Path:
     CLEAN_DIR.mkdir(parents=True, exist_ok=True)
     df = df.rename(columns=lambda c: re.sub(r"\W+", "_", str(c).strip().lower()).strip("_"))
     path = CLEAN_DIR / f"{name}.parquet"
-    df.to_parquet(path, index=False)
+    df.to_parquet(path, index=False, compression="zstd")
     return path

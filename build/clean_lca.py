@@ -52,7 +52,7 @@ COLUMNS = {
     "prevailing_wage": ["PREVAILING_WAGE", "PREVAILING_WAGE_1"],
     "pw_unit": ["PW_UNIT_OF_PAY", "PW_UNIT_OF_PAY_1"],
     "pw_wage_level": ["PW_WAGE_LEVEL", "PW_WAGE_LEVEL_1"],
-    "h1b_dependent": ["H_1B_DEPENDENT", "H1B_DEPENDENT"],
+    "h1b_dependent": ["H_1B_DEPENDENT", "H-1B_DEPENDENT", "H1B_DEPENDENT"],
     "willful_violator": ["WILLFUL_VIOLATOR"],
 }
 REQUIRED = ["case_number", "case_status", "employer_name", "soc_code", "wage_from", "wage_unit"]
@@ -76,7 +76,7 @@ def read_one(path: Path) -> pd.DataFrame:
     if path.suffix.lower() == ".csv":
         raw = pd.read_csv(path, dtype=str, usecols=lambda c: c.strip().upper() in wanted)
     else:
-        raw = pd.read_excel(path, dtype=str, engine="openpyxl", usecols=lambda c: str(c).strip().upper() in wanted)
+        raw = pd.read_excel(path, dtype=str, engine="calamine", usecols=lambda c: str(c).strip().upper() in wanted)
     raw.columns = [str(c).strip().upper() for c in raw.columns]
 
     out = pd.DataFrame(index=raw.index)
@@ -95,7 +95,9 @@ def read_one(path: Path) -> pd.DataFrame:
     out["source_file"] = path.name
     out["file_fy"] = int(match.group(1)) if match else pd.NA
     out["file_quarter"] = int(match.group(2)) if match and match.group(2) else 4
-    print(f"  {path.name}: {len(out):,} rows in {time.time() - t:.0f}s", file=sys.stderr)
+    decided = pd.to_datetime(out["decision_date"], errors="coerce")
+    print(f"  {path.name}: {len(out):,} rows in {time.time() - t:.0f}s, "
+          f"decisions {decided.min():%Y-%m-%d} to {decided.max():%Y-%m-%d}", file=sys.stderr)
     return out
 
 
