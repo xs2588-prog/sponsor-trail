@@ -222,3 +222,6 @@ __marimo__/
 # Cleaned data is large; B decides what gets committed vs loaded from GCS
 data/clean/
 data/raw/
+
+# Our offline build scripts live in build/ (the Python template ignores it)
+!/build/
