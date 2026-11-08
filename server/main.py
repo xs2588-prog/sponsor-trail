@@ -4,7 +4,9 @@ Each tool_calls entry also has an `agent` field: lead, researcher-<source> or wr
 """
 
 import asyncio
+import logging
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -13,11 +15,23 @@ from pydantic import BaseModel
 
 from agents import lead, llm
 from sources import active_sources
+from sources.remote import sync_from_gcs
 
 REQUEST_BUDGET_SECONDS = 270  # graders wait up to 5 minutes; Cloud Run timeout must be >= 300s
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 
-app = FastAPI(title="Sponsor Trail")
+logging.basicConfig(level=logging.INFO)
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    # On Cloud Run the data lives in GCS; fetch it before serving (no-op locally).
+    files = await asyncio.to_thread(sync_from_gcs)
+    logging.info("data from GCS: %s; active sources: %s", files or "none", list(active_sources()))
+    yield
+
+
+app = FastAPI(title="Sponsor Trail", lifespan=lifespan)
 
 # session_id -> list of {role, content} turns. In-memory, single process.
 sessions: dict[str, list[dict]] = {}
