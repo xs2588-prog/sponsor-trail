@@ -1,6 +1,6 @@
 from datetime import date
 
-from build.common import fiscal_year, normalize_employer, normalize_soc
+from build.common import fiscal_year, normalize_employer, normalize_soc, soc_2018
 
 
 def test_normalize_employer_merges_spellings():
@@ -17,6 +17,13 @@ def test_normalize_soc():
     assert normalize_soc("15-2051.00") == "15-2051"
     assert normalize_soc("152051") == "15-2051"
     assert normalize_soc("n/a") == ""
+
+
+def test_soc_2018_maps_moved_codes_only():
+    assert soc_2018("15-1132") == "15-1252" and soc_2018("15-1133") == "15-1252"
+    assert soc_2018("15-1252") == "15-1252"  # already 2018
+    assert soc_2018("15-1199") == "15-1199"  # split code: left alone
+    assert soc_2018("") == ""
 
 
 def test_fiscal_year_starts_in_october():

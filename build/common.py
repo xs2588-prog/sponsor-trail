@@ -47,6 +47,30 @@ def normalize_soc(code) -> str:
     return f"{digits[:2]}-{digits[2:]}" if len(digits) == 6 else ""
 
 
+# 2010 SOC -> 2018 SOC for the codes that moved, limited to near one-to-one moves among the
+# occupations sponsors file most. Split or merged codes (e.g. 15-1199 Computer Occupations, All
+# Other) are left as they are. Filings switched to 2018 codes around FY2021 (LCA) and FY2025 (PERM).
+SOC_2010_TO_2018 = {
+    "15-1111": "15-1221",  # Computer and Information Research Scientists
+    "15-1121": "15-1211",  # Computer Systems Analysts
+    "15-1122": "15-1212",  # Information Security Analysts
+    "15-1131": "15-1251",  # Computer Programmers
+    "15-1132": "15-1252",  # Software Developers, Applications -> Software Developers
+    "15-1133": "15-1252",  # Software Developers, Systems Software -> Software Developers
+    "15-1134": "15-1254",  # Web Developers
+    "15-1141": "15-1242",  # Database Administrators
+    "15-1142": "15-1244",  # Network and Computer Systems Administrators
+    "15-1143": "15-1241",  # Computer Network Architects
+    "15-1151": "15-1232",  # Computer User Support Specialists
+    "15-1152": "15-1231",  # Computer Network Support Specialists
+}
+
+
+def soc_2018(code: str) -> str:
+    """A normalized SOC code ('15-1132') in its 2018 version ('15-1252'); unchanged if it didn't move."""
+    return SOC_2010_TO_2018.get(code, code) if isinstance(code, str) else ""
+
+
 def fiscal_year(d) -> int | None:
     """US federal fiscal year: October starts the next FY."""
     if d is None or (isinstance(d, float) and pd.isna(d)):
