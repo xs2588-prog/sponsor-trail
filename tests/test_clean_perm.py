@@ -20,7 +20,7 @@ def _csv(path, header, rows):
 def test_old_and_new_layouts_land_in_one_schema(tmp_path):
     old = _csv(tmp_path / "PERM_Disclosure_Data_FY2023_Q4.csv", OLD_HEADER, [
         ["A-1", "Certified-Expired", "2022-03-01", "2023-01-15", "Google LLC", "MOUNTAIN VIEW", "CA", "541511",
-         "15-1132", "SOFTWARE DEVELOPERS, APPLICATIONS", "Level II", "150000", "", "Year", "New York", "ny",
+         "15-1132", "SOFTWARE DEVELOPERS, APPLICATIONS", "Level II", "150000", "", "Year", "New York", "NEW YORK",
          "10011", "Software Engineer", "H-1B", "Computer Science"],
     ])
     new = _csv(tmp_path / "PERM_Disclosure_Data_FY2025_Q4.csv", NEW_HEADER, [

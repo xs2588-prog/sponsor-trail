@@ -22,7 +22,7 @@ from pathlib import Path
 import pandas as pd
 
 from build.clean_lca import to_yearly
-from build.common import fiscal_year, normalize_employer, normalize_soc, soc_2018, write_clean
+from build.common import fiscal_year, normalize_employer, normalize_soc, soc_2018, state_code, write_clean
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw" / "perm"
 
@@ -122,8 +122,8 @@ def clean(frames: list[pd.DataFrame]) -> pd.DataFrame:
     df["naics_code"] = _digits(df["naics_code"])
     df["employer_num_employees"] = pd.to_numeric(_digits(df["employer_num_employees"]), errors="coerce").astype("Int64")
 
-    for col in ["employer_state", "worksite_state"]:
-        df[col] = df[col].astype("string").str.strip().str.upper()
+    for col in ["employer_state", "worksite_state"]:  # old form: 'WASHINGTON', new form: 'WA'
+        df[col] = state_code(df[col])
     for col in ["employer_city", "worksite_city"]:
         df[col] = df[col].astype("string").str.strip().str.title()
     df["worksite_postal_code"] = _digits(df["worksite_postal_code"], 5)
