@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -32,12 +32,12 @@
          display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-height: 520px; }
   section h2 { font-size: 14px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--quiet); }
-  #messages, #trace { flex: 1; overflow-y: auto; padding: 16px; max-height: 70vh; }
+  #messages, #trace { flex: 1; overflow: auto; padding: 16px; max-height: 70vh; }
   .msg { margin-bottom: 14px; }
   .msg.user { text-align: right; }
   .msg.user span { display: inline-block; background: var(--accent-soft); padding: 8px 12px; border-radius: 12px; }
   .msg.bot { border-left: 3px solid var(--accent); padding-left: 12px; }
-  .msg.bot table { border-collapse: collapse; font-size: 13px; }
+  .msg.bot table { border-collapse: collapse; font-size: 13px; display: block; overflow-x: auto; }
   .msg.bot th, .msg.bot td { border: 1px solid var(--line); padding: 4px 8px; }
   .samples { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
   .samples button { border: 1px solid var(--line); background: transparent; color: var(--ink);
@@ -67,34 +67,34 @@
 <body>
 <header>
   <h1>Sponsor Trail</h1>
-  <p class="tagline">哪些雇主真的会帮你办 H-1B，后来还帮办绿卡？用美国政府公开数据查给你看。</p>
+  <p class="tagline">Explore employer sponsorship of H-1B petitions and green-card labor certifications using US government data.</p>
   <div class="about">
-    <div><b>它查什么</b>DOL 的 H-1B 申请（LCA）、USCIS 的批准与拒绝、DOL 的绿卡申请（PERM），覆盖 FY2020 至 FY2026，任何岗位都能查。</div>
-    <div><b>给谁用</b>在美国找工作的国际学生，以及帮他们做职业规划的人。</div>
-    <div><b>怎么用</b>写清楚岗位、地点和年份（例如“2020-25 年”或“去年”）。问题不够具体时它会先追问。右侧可以看到每个 agent 查了什么。</div>
+    <div><b>What it explores</b>DOL H-1B labor condition applications (LCA), USCIS approvals and denials, and DOL green-card labor certifications (PERM). Available years and fields depend on the loaded data. Labor certification does not mean a visa or green card was approved.</div>
+    <div><b>Who it is for</b>International students seeking US jobs and the career advisers who support them.</div>
+    <div><b>How to use it</b>Specify an occupation, location, and year range (such as 2020-2025 or last year). The agent asks for clarification when needed. The panel on the right shows each agent's work.</div>
   </div>
-  <p class="muted" id="status">正在加载数据源…</p>
+  <p class="muted" id="status">Loading data sources...</p>
 </header>
 <main>
   <section>
-    <h2>对话</h2>
+    <h2>Chat</h2>
     <div id="messages"></div>
     <div class="samples" id="samples"></div>
     <form id="form">
-      <textarea id="input" rows="2" placeholder="例如：2020-2025 年纽约给 Data Scientist 办 H-1B 最多的公司有哪些？后来有没有办绿卡？"></textarea>
-      <button id="send">发送</button>
+      <textarea id="input" rows="2" placeholder="Example: Which employers filed the most H-1B LCAs for Data Scientists in NYC in 2020-2025? Did they also file PERM cases?"></textarea>
+      <button id="send">Send</button>
     </form>
   </section>
   <section>
-    <h2>Agent 过程（Lead → Researchers → Writer）</h2>
-    <div id="trace"><p class="muted">提问后，这里会按 agent 显示每一步：Lead 的规划、各个 Researcher 跑的 SQL、Writer 的汇总。</p></div>
+    <h2>Agent trace (Lead → Researchers → Writer)</h2>
+    <div id="trace"><p class="muted">After you ask a question, this panel shows the Lead's plan, Researchers' SQL queries, and the Writer's report step.</p></div>
   </section>
 </main>
 <script>
 const SAMPLES = [
-  "2020-2025 年纽约给 Data Scientist 办 H-1B 最多的 10 家公司？其中哪些后来办了绿卡？",
-  "去年给会计岗办 H-1B 的公司里，哪些 USCIS 批准率最高？",
-  "我想找个好办签证的工作",
+  "Which 10 employers filed the most H-1B LCAs for Data Scientists in NYC in 2020-2025? Which also filed PERM cases?",
+  "Among employers filing H-1B LCAs for accountants last year, which had the highest employer-wide USCIS approval rates?",
+  "I want a job with good visa sponsorship prospects",
 ];
 let sessionId = null;
 const $ = (id) => document.getElementById(id);
@@ -122,49 +122,48 @@ function pretty(value) {
 function renderTrace(calls) {
   const trace = $("trace");
   trace.innerHTML = "";
-  if (!calls.length) { trace.innerHTML = '<p class="muted">这一轮没有工具调用。</p>'; return; }
-  const groups = new Map();
+  if (!calls.length) { trace.innerHTML = '<p class="muted">No tool calls in this turn.</p>'; return; }
+  let box = null;
+  let previous = null;
   for (const c of calls) {
-    const key = c.agent || "agent";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(c);
-  }
-  for (const [agent, items] of groups) {
-    const box = document.createElement("div");
-    box.className = "agent " + agent.split("-")[0];
-    const title = document.createElement("b");
-    title.textContent = `${agent} · ${items.length} 步`;
-    box.appendChild(title);
-    for (const c of items) {
-      const d = document.createElement("details");
-      const s = document.createElement("summary");
-      s.textContent = c.args && c.args.sql ? `${c.name}: ${c.args.sql.slice(0, 80)}` : c.name;
-      const pre = document.createElement("pre");
-      pre.textContent = "args: " + pretty(c.args) + "\n\nresult: " + pretty(c.result);
-      d.append(s, pre);
-      box.appendChild(d);
+    const agent = c.agent || "agent";
+    if (agent !== previous) {
+      box = document.createElement("div");
+      box.className = "agent " + agent.split("-")[0];
+      const title = document.createElement("b");
+      title.textContent = agent;
+      box.appendChild(title);
+      trace.appendChild(box);
+      previous = agent;
     }
-    trace.appendChild(box);
+    const d = document.createElement("details");
+    const s = document.createElement("summary");
+    s.textContent = c.args && c.args.sql ? `${c.name}: ${c.args.sql.slice(0, 80)}` : c.name;
+    const pre = document.createElement("pre");
+    pre.textContent = "args: " + pretty(c.args) + "\n\nresult: " + pretty(c.result);
+    d.append(s, pre);
+    box.appendChild(d);
   }
 }
 
 async function send(text) {
-  if (!text.trim()) return;
+  if (!text.trim() || $("send").disabled) return;
   addMessage("user", text);
   $("input").value = "";
   $("send").disabled = true;
-  const pending = addMessage("bot", "_正在研究，通常需要 30 秒到 2 分钟…_");
+  const pending = addMessage("bot", "_Researching; this usually takes 30 seconds to 2 minutes..._");
   try {
     const res = await fetch("/chat", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: text, session_id: sessionId }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     sessionId = data.session_id;
     pending.innerHTML = DOMPurify.sanitize(marked.parse(data.response || ""));
     renderTrace(data.tool_calls || []);
   } catch (e) {
-    pending.textContent = "请求失败：" + e;
+    pending.textContent = "Request failed: " + e;
   } finally {
     $("send").disabled = false;
   }
@@ -182,8 +181,8 @@ for (const q of SAMPLES) {
 fetch("/api/status").then(r => r.json()).then(s => {
   const names = s.sources.map(x => x.name);
   $("status").textContent = names.length
-    ? `已加载的数据源：${names.join("、")}${names.includes("example") ? "（example 是假数据，仅供测试）" : ""}`
-    : "还没有加载任何数据源。";
+    ? `Loaded sources: ${names.join(", ")}${s.demo ? " (DEMO: all companies and numbers are fabricated)" : ""}${s.missing_sources?.length ? "; not loaded: " + s.missing_sources.join(", ") : ""}`
+    : "No data sources are loaded yet.";
 }).catch(() => { $("status").textContent = ""; });
 </script>
 </body>
