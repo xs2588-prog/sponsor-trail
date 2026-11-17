@@ -12,7 +12,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from agents import lead, llm
 from sources import active_sources
@@ -43,8 +43,15 @@ sessions: dict[str, list[dict]] = {}
 
 
 class ChatRequest(BaseModel):
-    message: str
-    session_id: str | None = None
+    message: str = Field(min_length=1, max_length=8000)
+    session_id: str | None = Field(default=None, max_length=128)
+
+    @field_validator("message")
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError("Message cannot be blank")
+        return value.strip()
 
 
 class ChatResponse(BaseModel):
@@ -76,15 +83,19 @@ def index():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     session_id = request.session_id or str(uuid.uuid4())
+    if session_id not in sessions and len(sessions) >= 512:
+        sessions.pop(next(iter(sessions)))
     history = sessions.setdefault(session_id, [])
+    tool_calls: list[dict] = []
     try:
         response, tool_calls = await asyncio.wait_for(
-            lead.run(request.message, history), timeout=REQUEST_BUDGET_SECONDS)
+            lead.run(request.message, history, trace=tool_calls), timeout=REQUEST_BUDGET_SECONDS)
     except asyncio.TimeoutError:
-        response, tool_calls = "Sorry, this question took too long. Try narrowing the job, place or years.", []
+        response = "Sorry, this question took too long. Try narrowing the job, place or years."
     except Exception as e:  # auth, billing, model down: show it in the chat, not as a 500
-        response, tool_calls = describe_model_error(e), []
+        response = describe_model_error(e)
     history += [{"role": "user", "content": request.message}, {"role": "assistant", "content": response}]
+    del history[:-12]
     return ChatResponse(response=response, session_id=session_id, tool_calls=tool_calls)
 
 
@@ -100,6 +111,7 @@ def status():
     sources = active_sources()
     return {
         "model": llm.DEFAULT_MODEL,
+        "models": {role: llm.model_for(role) for role in ("lead", "researcher", "writer")},
         "sources": [{"name": n, "description": s.description} for n, s in sources.items()],
         "demo": "example" in sources,
         "missing_sources": [n for n in ("lca", "uscis", "perm") if n not in sources],

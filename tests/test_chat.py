@@ -16,7 +16,7 @@ def fake_model(script):
         if role == "lead":
             return {"content": json.dumps({"done": True})}
         if role == "writer":
-            return {"content": "Acme Analytics filed the most [1]."}
+            return {"content": '{"evidence_ids": [1, 2]}'}
         # researcher: first run SQL, then report
         if not any(m.get("role") == "tool" for m in messages):
             return {"content": None, "tool_calls": [{"id": "c1", "type": "function", "function": {
@@ -35,6 +35,8 @@ def test_chat_shape_and_agent_field(monkeypatch):
 
     assert set(data) == {"response", "session_id", "tool_calls"}
     assert "[1]" in data["response"]
+    assert "| 7 |" in data["response"]
+    assert "Writer returned no valid" not in data["response"]
     agents = [c["agent"] for c in data["tool_calls"]]
     assert agents[0] == "lead" and agents[-1] == "writer"
     assert agents.count("researcher-example") == 2  # two researchers ran

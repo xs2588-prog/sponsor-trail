@@ -19,7 +19,8 @@ def model_for(role: str) -> str:
 
 async def complete(messages: list[dict], tools: list[dict] | None = None, role: str = "researcher") -> dict:
     """Return the assistant message as a plain dict (content, tool_calls)."""
-    kwargs = {"model": model_for(role), "messages": messages, "num_retries": 3}
+    kwargs = {"model": model_for(role), "messages": messages, "num_retries": 1,
+              "timeout": 45, "max_tokens": 4096}
     if kwargs["model"].startswith("vertex_ai/"):
         kwargs["vertex_location"] = "global"
     if tools:
