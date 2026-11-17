@@ -28,7 +28,7 @@ _SUFFIX_RE = re.compile(r"(?:\s+(?:" + "|".join(re.escape(s) for s in _SUFFIXES)
 
 def normalize_employer(name) -> str:
     """'Google LLC' / 'GOOGLE, INC.' / 'google' -> 'google'."""
-    if name is None or (isinstance(name, float) and pd.isna(name)):
+    if name is None or pd.isna(name):
         return ""
     s = str(name).lower().replace("&", " and ")
     s = re.sub(r"[^a-z0-9 ]+", " ", s)
@@ -41,7 +41,7 @@ def normalize_employer(name) -> str:
 
 def normalize_soc(code) -> str:
     """'15-2051.00' / '152051' / '15-2051' -> '15-2051'. Unknown shapes -> ''."""
-    if code is None or (isinstance(code, float) and pd.isna(code)):
+    if code is None or pd.isna(code):
         return ""
     digits = re.sub(r"\D", "", str(code))[:6]
     return f"{digits[:2]}-{digits[2:]}" if len(digits) == 6 else ""
@@ -95,7 +95,7 @@ def state_code(s: pd.Series) -> pd.Series:
 
 def fiscal_year(d) -> int | None:
     """US federal fiscal year: October starts the next FY."""
-    if d is None or (isinstance(d, float) and pd.isna(d)):
+    if d is None or pd.isna(d):
         return None
     if isinstance(d, str):
         d = pd.to_datetime(d, errors="coerce")

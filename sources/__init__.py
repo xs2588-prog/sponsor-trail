@@ -16,6 +16,9 @@ ALL_SOURCES: list[SqlSource] = [lca.SOURCE, uscis.SOURCE, perm.SOURCE, example.S
 def active_sources() -> dict[str, SqlSource]:
     """name -> source, for every source whose data is loaded."""
     show_example = os.environ.get("SPONSOR_EXAMPLE_SOURCE", "1") != "0"
+    real = {s.name: s for s in ALL_SOURCES if s.name != "example" and s.available()}
+    if real:
+        return real
     return {
         s.name: s for s in ALL_SOURCES
         if s.available() and (s.name != "example" or show_example)

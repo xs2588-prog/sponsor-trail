@@ -32,3 +32,10 @@ def test_clean_dedupes_to_latest_file_and_normalizes():
     assert row.case_status == "Withdrawn" and row.employer_key == "google" and row.soc_code == "15-2051"
     assert row.worksite_state == "NY" and row.worksite_city == "New York"
     assert row.fiscal_year == 2025 and row.calendar_year == 2024 and row.wage_from_yearly == 150000
+
+
+def test_worker_type_counts_are_numeric_and_missing_is_not_zero():
+    df = clean([_frame('I-1', 2025, 1, new_employment='2', continued_employment='3', change_employer=None)])
+    assert df.new_employment.dtype == df.continued_employment.dtype == 'Int64'
+    assert df.new_employment.iloc[0] == 2
+    assert pd.isna(df.change_employer.iloc[0])

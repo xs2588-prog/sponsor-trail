@@ -131,7 +131,8 @@ def clean(frames: list[pd.DataFrame], h1b_only: bool = False) -> pd.DataFrame:
     df["prevailing_wage_yearly"] = to_yearly(df["prevailing_wage"], df["pw_unit"])
     # Obvious typos (e.g. an hourly wage marked as yearly) would wreck medians.
     df.loc[(df["wage_from_yearly"] < 15_000) | (df["wage_from_yearly"] > 2_000_000), "wage_from_yearly"] = pd.NA
-    df["total_workers"] = pd.to_numeric(df["total_workers"], errors="coerce").astype("Int64")
+    for col in ("total_workers", "new_employment", "continued_employment", "change_employer"):
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
     keep = [
         "case_number", "case_status", "visa_class", "fiscal_year", "calendar_year", "received_date", "decision_date",

@@ -6,6 +6,7 @@ Each tool_calls entry also has an `agent` field: lead, researcher-<source> or wr
 import asyncio
 import logging
 import uuid
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -27,6 +28,10 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(_app):
     # On Cloud Run the data lives in GCS; fetch it before serving (no-op locally).
     files = await asyncio.to_thread(sync_from_gcs)
+    required = {s.strip() for s in os.environ.get("SPONSOR_REQUIRED_SOURCES", "").split(",") if s.strip()}
+    missing = required - active_sources().keys()
+    if missing:
+        raise RuntimeError(f"Required data sources missing: {', '.join(sorted(missing))}. Check SPONSOR_GCS_URI and bucket permissions.")
     logging.info("data from GCS: %s; active sources: %s", files or "none", list(active_sources()))
     yield
 
@@ -92,7 +97,10 @@ def clear(session_id: str | None = None):
 @app.get("/api/status")
 def status():
     """Which sources are loaded, so the UI can show them."""
+    sources = active_sources()
     return {
         "model": llm.DEFAULT_MODEL,
-        "sources": [{"name": n, "description": s.description} for n, s in active_sources().items()],
+        "sources": [{"name": n, "description": s.description} for n, s in sources.items()],
+        "demo": "example" in sources,
+        "missing_sources": [n for n in ("lca", "uscis", "perm") if n not in sources],
     }

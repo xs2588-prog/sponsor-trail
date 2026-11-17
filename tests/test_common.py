@@ -31,3 +31,11 @@ def test_fiscal_year_starts_in_october():
     assert fiscal_year(date(2025, 9, 30)) == 2025
     assert fiscal_year("2025-03-11") == 2025
     assert fiscal_year("not a date") is None
+
+
+def test_nullable_inputs_do_not_become_fake_employer_keys():
+    import pandas as pd
+    assert normalize_employer(pd.NA) == ''
+    assert normalize_employer(pd.NaT) == ''
+    assert normalize_soc(pd.NA) == ''
+    assert fiscal_year(pd.NaT) is None

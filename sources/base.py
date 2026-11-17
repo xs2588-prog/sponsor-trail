@@ -18,7 +18,6 @@ A Researcher must end with this JSON (see agents/researcher.py):
 
 import json
 import os
-import re
 import threading
 from pathlib import Path
 
@@ -28,12 +27,6 @@ MAX_ROWS = 50
 DATA_DIR = os.environ.get(
     "SPONSOR_DATA_DIR", str(Path(__file__).resolve().parent.parent / "data" / "clean")
 )
-
-_FORBIDDEN = re.compile(
-    r"\b(insert|update|delete|drop|create|alter|attach|detach|copy|export|install|load|pragma|call|set)\b",
-    re.IGNORECASE,
-)
-
 
 def data_path(filename: str) -> str:
     """Where a cleaned file lives. B decides whether DATA_DIR is local or downloaded from GCS at startup."""
@@ -84,23 +77,45 @@ class SqlSource:
 
     def _connection(self):
         if self._con is None:
-            con = duckdb.connect()
+            con = duckdb.connect(config={
+                "autoinstall_known_extensions": False,
+                "autoload_known_extensions": False,
+                "threads": 2,
+                "memory_limit": "512MB",
+            })
+            con.execute("SET allowed_paths = ?", [[str(Path(p).resolve()) for p in self.tables.values()]])
+            con.execute("SET enable_external_access = false")
             for table, path in self.tables.items():
                 reader = "read_parquet" if path.endswith(".parquet") else "read_csv_auto"
-                con.execute(f"CREATE VIEW {table} AS SELECT * FROM {reader}('{path}')")
+                safe_path = str(Path(path).resolve()).replace("'", "''")
+                con.execute(f'CREATE VIEW "{table}" AS SELECT * FROM {reader}(\'{safe_path}\')')
             self._con = con
         return self._con
 
     def run_sql(self, sql: str) -> dict:
-        sql = (sql or "").strip().rstrip(";")
-        if not re.match(r"^(select|with)\b", sql, re.IGNORECASE) or ";" in sql or _FORBIDDEN.search(sql):
+        if not isinstance(sql, str):
+            return {"ok": False, "error": "SQL must be a string.", "fix": "Pass a SELECT statement in sql."}
+        sql = sql.strip().rstrip(";")
+        try:
+            statements = duckdb.extract_statements(sql)
+            readonly = len(statements) == 1 and statements[0].type == duckdb.StatementType.SELECT
+        except Exception:
+            readonly = False
+        if not readonly:
             return {"ok": False, "error": "Only a single read-only SELECT is allowed.",
                     "fix": "Rewrite as one SELECT (or WITH ... SELECT) statement."}
         try:
             with self._lock:  # one DuckDB connection per source, shared across requests
-                cur = self._connection().execute(sql)
-                columns = [d[0] for d in cur.description]
-                rows = cur.fetchmany(MAX_ROWS + 1)
+                con = self._connection()
+                deadline = threading.Timer(30, con.interrupt)
+                deadline.daemon = True
+                deadline.start()
+                try:
+                    cur = con.execute(sql)
+                    columns = [d[0] for d in cur.description]
+                    rows = cur.fetchmany(MAX_ROWS + 1)
+                finally:
+                    deadline.cancel()
         except Exception as e:  # SQL errors go back to the model so it can fix the query
             return {"ok": False, "error": str(e).splitlines()[0][:400],
                     "fix": "Check table and column names against the data dictionary and retry."}
