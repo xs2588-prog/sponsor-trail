@@ -1,0 +1,127 @@
+{
+  "id": "uscis-initial-2025",
+  "source": "uscis",
+  "question": "Across all US employers in FY2025, which five employer keys had the most USCIS initial H-1B approvals? Show summed initial approvals, initial denials, and initial approval rate rounded to four decimal places. Require at least ten initial decisions; break ties by employer_key. This is an employer-wide question, with no occupation filter.",
+  "expectation": "Five employer keys ranked by summed initial approvals, initial denials and initial approval rate (0 to 1) from uscis. Not a job-specific rate or lottery probability.",
+  "sql": "SELECT employer_key, SUM(initial_approvals) AS initial_approvals,\nSUM(initial_denials) AS initial_denials,\nROUND(SUM(initial_approvals)::DOUBLE / NULLIF(SUM(initial_approvals) + SUM(initial_denials), 0), 4) AS initial_rate\nFROM uscis WHERE fiscal_year = 2025\nGROUP BY employer_key HAVING SUM(initial_approvals) + SUM(initial_denials) >= 10\nORDER BY initial_approvals DESC, employer_key LIMIT 5",
+  "model": "vertex_ai/gemini-3.5-flash-lite",
+  "recorded_at": "2026-11-18T02:42:28.836526+00:00",
+  "reference": {
+    "ok": true,
+    "columns": [
+      "employer_key",
+      "initial_approvals",
+      "initial_denials",
+      "initial_rate"
+    ],
+    "rows": [
+      [
+        "amazon com services",
+        3003,
+        45,
+        0.9852
+      ],
+      [
+        "meta platforms",
+        1554,
+        14,
+        0.9911
+      ],
+      [
+        "microsoft",
+        1394,
+        6,
+        0.9957
+      ],
+      [
+        "google",
+        1042,
+        6,
+        0.9943
+      ],
+      [
+        "amazon development center u s",
+        895,
+        6,
+        0.9933
+      ]
+    ],
+    "truncated": false,
+    "sql": "SELECT employer_key, SUM(initial_approvals) AS initial_approvals,\nSUM(initial_denials) AS initial_denials,\nROUND(SUM(initial_approvals)::DOUBLE / NULLIF(SUM(initial_approvals) + SUM(initial_denials), 0), 4) AS initial_rate\nFROM uscis WHERE fiscal_year = 2025\nGROUP BY employer_key HAVING SUM(initial_approvals) + SUM(initial_denials) >= 10\nORDER BY initial_approvals DESC, employer_key LIMIT 5"
+  },
+  "agent": {
+    "response": "These results come from executed SQL. Counts from different sources measure different things.\n\n### uscis [1]\n\n> Find the top five employers by USCIS initial H-1B approvals in FY2025. Return the employer_key, sum of initial approvals, sum of initial denials, and the initial approval rate rounded to four decimal places. Filter for employers with at least 10 initial decisions (approvals + denials) in FY2025. Break ties alphabetically by employer_key.\n\n| employer_key | employer_name | total_initial_approvals | total_initial_denials | initial_approval_rate |\n| --- | --- | --- | --- | --- |\n| amazon com services | AMAZON COM SERVICES LLC | 3003 | 45 | 0.9852 |\n| meta platforms | META PLATFORMS INC | 1554 | 14 | 0.9911 |\n| microsoft | MICROSOFT CORPORATION | 1394 | 6 | 0.9957 |\n| google | GOOGLE LLC | 1042 | 6 | 0.9943 |\n| amazon development center u s | AMAZON DEVELOPMENT CENTER U S INC | 895 | 6 | 0.9933 |\n\n### Limitations\n\n- The USCIS dataset provides petition counts and approval/denial metrics by employer filing location and NAICS sector, but does not contain information on job titles, occupations, salaries, or specific worksite locations.\n- Discarded a finding whose SQL or value did not match a successful query.\n- LCA ≠ H-1B approval; PERM ≠ green card approval. Employer-level USCIS rates are not occupation-specific or lottery odds.\n\n### Sources\n\n[1] uscis — executed SQL (years and filters shown below).\n\n```sql\nSELECT \n    employer_key,\n    ANY_VALUE(employer_name) AS employer_name,\n    SUM(initial_approvals) AS total_initial_approvals,\n    SUM(initial_denials) AS total_initial_denials,\n    ROUND(SUM(initial_approvals)::NUMERIC / NULLIF(SUM(initial_approvals) + SUM(initial_denials), 0), 4) AS initial_approval_rate\nFROM uscis\nWHERE fiscal_year = 2025\nGROUP BY employer_key\nHAVING (SUM(initial_approvals) + SUM(initial_denials)) >= 10\nORDER BY total_initial_approvals DESC, employer_key ASC\nLIMIT 5\n```\n",
+    "session_id": "6b659c2b-a3e5-478e-9737-900cb7243bb9",
+    "tool_calls": [
+      {
+        "agent": "lead",
+        "name": "plan",
+        "args": {
+          "question": "Across all US employers in FY2025, which five employer keys had the most USCIS initial H-1B approvals? Show summed initial approvals, initial denials, and initial approval rate rounded to four decimal places. Require at least ten initial decisions; break ties by employer_key. This is an employer-wide question, with no occupation filter."
+        },
+        "result": "{\"action\": \"research\", \"message\": \"\", \"resolved_question\": \"Across all US employers in FY2025, which five employer keys had the most USCIS initial H-1B approvals? Show summed initial approvals, initial denials, and initial approval rate rounded to four decimal places. Require at least ten initial decisions; break ties by employer_key.\", \"tasks\": [{\"source\": \"uscis\", \"task\": \"Find the top five employers by USCIS initial H-1B approvals in FY2025. Return the employer_key, sum of initial approvals, sum of initial denials, and the initial approval rate rounded to four decimal places. Filter for employers with at least 10 initial decisions (approvals + denials) in FY2025. Break ties alphabetically by employer_key.\"}]}"
+      },
+      {
+        "agent": "lead",
+        "name": "dispatch_researchers",
+        "args": {
+          "tasks": [
+            {
+              "source": "uscis",
+              "task": "Find the top five employers by USCIS initial H-1B approvals in FY2025. Return the employer_key, sum of initial approvals, sum of initial denials, and the initial approval rate rounded to four decimal places. Filter for employers with at least 10 initial decisions (approvals + denials) in FY2025. Break ties alphabetically by employer_key."
+            }
+          ]
+        },
+        "result": "1 researchers started in parallel"
+      },
+      {
+        "agent": "researcher-uscis",
+        "name": "run_sql",
+        "args": {
+          "sql": "\nSELECT \n    employer_key,\n    ANY_VALUE(employer_name) AS employer_name,\n    SUM(initial_approvals) AS total_initial_approvals,\n    SUM(initial_denials) AS total_initial_denials,\n    ROUND(SUM(initial_approvals)::NUMERIC / NULLIF(SUM(initial_approvals) + SUM(initial_denials), 0), 4) AS initial_approval_rate\nFROM uscis\nWHERE fiscal_year = 2025\nGROUP BY employer_key\nHAVING (SUM(initial_approvals) + SUM(initial_denials)) >= 10\nORDER BY total_initial_approvals DESC, employer_key ASC\nLIMIT 5;\n"
+        },
+        "result": "{\"ok\": true, \"columns\": [\"employer_key\", \"employer_name\", \"total_initial_approvals\", \"total_initial_denials\", \"initial_approval_rate\"], \"rows\": [[\"amazon com services\", \"AMAZON COM SERVICES LLC\", 3003, 45, 0.9852], [\"meta platforms\", \"META PLATFORMS INC\", 1554, 14, 0.9911], [\"microsoft\", \"MICROSOFT CORPORATION\", 1394, 6, 0.9957], [\"google\", \"GOOGLE LLC\", 1042, 6, 0.9943], [\"amazon development center u s\", \"AMAZON DEVELOPMENT CENTER U S INC\", 895, 6, 0.9933]], \"truncated\": false, \"sql\": \"SELECT \\n    employer_key,\\n    ANY_VALUE(employer_name) AS employer_name,\\n    SUM(initial_approvals) AS total_initial_approvals,\\n    SUM(initial_denials) AS total_initial_denials,\\n    ROUND(SUM(initial_approvals)::NUMERIC / NULLIF(SUM(initial_approvals) + SUM(initial_denials), 0), 4) AS initial_approval_rate\\nFROM uscis\\nWHERE fiscal_year = 2025\\nGROUP BY employer_key\\nHAVING (SUM(initial_approvals) + SUM(initial_denials)) >= 10\\nORDER BY total_initial_approvals DESC, employer_key ASC\\nLIMIT 5\"}"
+      },
+      {
+        "agent": "lead",
+        "name": "check_gaps",
+        "args": {},
+        "result": "{\"done\": true}"
+      },
+      {
+        "agent": "writer",
+        "name": "write_report",
+        "args": {
+          "reports": 1
+        },
+        "result": "ok"
+      }
+    ]
+  },
+  "baseline": "```json\n[\n  {\n    \"employer_key\": \"AMAZON.COM SERVICES LLC\",\n    \"initial_approvals\": 7378,\n    \"initial_denials\": 194,\n    \"initial_approval_rate\": 0.9744\n  },\n  {\n    \"employer_key\": \"COGNIZANT TECHNOLOGY SOLUTIONS US CORP\",\n    \"initial_approvals\": 4279,\n    \"initial_denials\": 69,\n    \"initial_approval_rate\": 0.9841\n  },\n  {\n    \"employer_key\": \"TATA CONSULTANCY SERVICES LIMITED\",\n    \"initial_approvals\": 3139,\n    \"initial_denials\": 71,\n    \"initial_approval_rate\": 0.9789\n  },\n  {\n    \"employer_key\": \"GOOGLE LLC\",\n    \"initial_approvals\": 2983,\n    \"initial_denials\": 49,\n    \"initial_approval_rate\": 0.9838\n  },\n  {\n    \"employer_key\": \"MICROSOFT CORPORATION\",\n    \"initial_approvals\": 2728,\n    \"initial_denials\": 46,\n    \"initial_approval_rate\": 0.9834\n  }\n]\n```",
+  "dataset": {
+    "lca": [
+      {
+        "file": "lca.parquet",
+        "bytes": 143299799,
+        "sha256": "835d2b06cbff6400b5940671eec17d8e38727415f1389a2990848f97635c0f91"
+      }
+    ],
+    "uscis": [
+      {
+        "file": "uscis.parquet",
+        "bytes": 27401262,
+        "sha256": "daa28d81bf576fba272c258d7270054f7584a323f29ff667ac3697619f2a66c4"
+      }
+    ],
+    "perm": [
+      {
+        "file": "perm.parquet",
+        "bytes": 34048998,
+        "sha256": "f0c9feee30c7dcb27fe82e2022308273ac3ebc9e9b4b1ddd7433c075bb1f35d3"
+      }
+    ]
+  },
+  "reference_values_match": true,
+  "answer_values_match": true
+}

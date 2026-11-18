@@ -1,0 +1,121 @@
+{
+  "id": "perm-ny-software-2025",
+  "source": "perm",
+  "question": "In FY2025, which five employer keys had the most certified PERM cases for Software Developers (soc_code_2018 = 15-1252) in New York State? Include Certified and Certified - Expired. Show case counts and the exact MEDIAN(processing_days), retaining fractional values such as .5 without casting or rounding; break ties by employer_key. Explain whether this proves that green cards were issued.",
+  "expectation": "Five employer keys, PERM certification counts and median processing days from perm. Explicitly state that PERM certification does not prove a green card was issued.",
+  "sql": "SELECT employer_key, COUNT(*) AS certified_cases,\nMEDIAN(processing_days) AS median_processing_days\nFROM perm WHERE fiscal_year = 2025 AND worksite_state = 'NY'\nAND soc_code_2018 = '15-1252' AND case_status IN ('Certified', 'Certified - Expired')\nGROUP BY employer_key ORDER BY certified_cases DESC, employer_key LIMIT 5",
+  "model": "vertex_ai/gemini-3.5-flash-lite",
+  "recorded_at": "2026-11-18T02:42:37.514125+00:00",
+  "reference": {
+    "ok": true,
+    "columns": [
+      "employer_key",
+      "certified_cases",
+      "median_processing_days"
+    ],
+    "rows": [
+      [
+        "bloomberg l p",
+        172,
+        469.0
+      ],
+      [
+        "ibm",
+        84,
+        484.0
+      ],
+      [
+        "goldman sachs services",
+        60,
+        491.0
+      ],
+      [
+        "morgan stanley services group",
+        46,
+        489.5
+      ],
+      [
+        "mitchell martin",
+        29,
+        499.0
+      ]
+    ],
+    "truncated": false,
+    "sql": "SELECT employer_key, COUNT(*) AS certified_cases,\nMEDIAN(processing_days) AS median_processing_days\nFROM perm WHERE fiscal_year = 2025 AND worksite_state = 'NY'\nAND soc_code_2018 = '15-1252' AND case_status IN ('Certified', 'Certified - Expired')\nGROUP BY employer_key ORDER BY certified_cases DESC, employer_key LIMIT 5"
+  },
+  "agent": {
+    "response": "These results come from executed SQL. Counts from different sources measure different things.\n\n### perm [1]\n\n> Find the top 5 employer keys with the most certified PERM cases (including 'Certified' and 'Certified - Expired') for Software Developers (soc_code_2018: 15-1252) in New York State (NY) for FY2025. For each of the 5 employers, return the employer_key, the exact case count, and the exact MEDIAN(processing_days) retaining fractional values such as .5 without rounding or casting. Break any ties alphabetically by employer_key.\n\n| employer_key | cnt | med_days |\n| --- | --- | --- |\n| bloomberg l p | 172 | 469.0 |\n| ibm | 84 | 484.0 |\n| goldman sachs services | 60 | 491.0 |\n| morgan stanley services group | 46 | 489.5 |\n| mitchell martin | 29 | 499.0 |\n\n### Limitations\n\n- The PERM dataset does not include subsequent green card adjudication outcomes (I-140/I-485) or worker visa classes for FY2025 due to form disclosure changes.\n- LCA ≠ H-1B approval; PERM ≠ green card approval. Employer-level USCIS rates are not occupation-specific or lottery odds.\n\n### Sources\n\n[1] perm — executed SQL (years and filters shown below).\n\n```sql\nSELECT employer_key, COUNT(*) AS cnt, MEDIAN(processing_days) AS med_days FROM perm WHERE fiscal_year = 2025 AND soc_code_2018 = '15-1252' AND worksite_state = 'NY' AND case_status IN ('Certified', 'Certified - Expired') GROUP BY employer_key ORDER BY cnt DESC, employer_key ASC LIMIT 5\n```\n",
+    "session_id": "6cb136b9-9592-49cf-bb48-185e55ea0998",
+    "tool_calls": [
+      {
+        "agent": "lead",
+        "name": "plan",
+        "args": {
+          "question": "In FY2025, which five employer keys had the most certified PERM cases for Software Developers (soc_code_2018 = 15-1252) in New York State? Include Certified and Certified - Expired. Show case counts and the exact MEDIAN(processing_days), retaining fractional values such as .5 without casting or rounding; break ties by employer_key. Explain whether this proves that green cards were issued."
+        },
+        "result": "{\"action\": \"research\", \"message\": \"\", \"resolved_question\": \"In FY2025, which five employer keys had the most certified PERM cases for Software Developers (soc_code_2018 = 15-1252) in New York State? Include Certified and Certified - Expired. Show case counts and the exact MEDIAN(processing_days), retaining fractional values such as .5 without casting or rounding; break ties by employer_key. Explain whether this proves that green cards were issued.\", \"tasks\": [{\"source\": \"perm\", \"task\": \"Find the top 5 employer keys with the most certified PERM cases (including 'Certified' and 'Certified - Expired') for Software Developers (soc_code_2018: 15-1252) in New York State (NY) for FY2025. For each of the 5 employers, return the employer_key, the exact case count, and the exact MEDIAN(processing_days) retaining fractional values such as .5 without rounding or casting. Break any ties alphabetically by employer_key.\"}]}"
+      },
+      {
+        "agent": "lead",
+        "name": "dispatch_researchers",
+        "args": {
+          "tasks": [
+            {
+              "source": "perm",
+              "task": "Find the top 5 employer keys with the most certified PERM cases (including 'Certified' and 'Certified - Expired') for Software Developers (soc_code_2018: 15-1252) in New York State (NY) for FY2025. For each of the 5 employers, return the employer_key, the exact case count, and the exact MEDIAN(processing_days) retaining fractional values such as .5 without rounding or casting. Break any ties alphabetically by employer_key."
+            }
+          ]
+        },
+        "result": "1 researchers started in parallel"
+      },
+      {
+        "agent": "researcher-perm",
+        "name": "run_sql",
+        "args": {
+          "sql": "SELECT employer_key, COUNT(*) AS cnt, MEDIAN(processing_days) AS med_days FROM perm WHERE fiscal_year = 2025 AND soc_code_2018 = '15-1252' AND worksite_state = 'NY' AND case_status IN ('Certified', 'Certified - Expired') GROUP BY employer_key ORDER BY cnt DESC, employer_key ASC LIMIT 5"
+        },
+        "result": "{\"ok\": true, \"columns\": [\"employer_key\", \"cnt\", \"med_days\"], \"rows\": [[\"bloomberg l p\", 172, 469.0], [\"ibm\", 84, 484.0], [\"goldman sachs services\", 60, 491.0], [\"morgan stanley services group\", 46, 489.5], [\"mitchell martin\", 29, 499.0]], \"truncated\": false, \"sql\": \"SELECT employer_key, COUNT(*) AS cnt, MEDIAN(processing_days) AS med_days FROM perm WHERE fiscal_year = 2025 AND soc_code_2018 = '15-1252' AND worksite_state = 'NY' AND case_status IN ('Certified', 'Certified - Expired') GROUP BY employer_key ORDER BY cnt DESC, employer_key ASC LIMIT 5\"}"
+      },
+      {
+        "agent": "lead",
+        "name": "check_gaps",
+        "args": {},
+        "result": "{\"done\": true}"
+      },
+      {
+        "agent": "writer",
+        "name": "write_report",
+        "args": {
+          "reports": 1
+        },
+        "result": "ok"
+      }
+    ]
+  },
+  "baseline": "Based on the PERM disclosure data for FY2025, here are the top five employers with the most certified PERM cases (including both *Certified* and *Certified - Expired*) for Software Developers (SOC Code 15-1252) in New York State.\n\n### Top 5 Employers for Software Developers (NY, FY2025)\n\n| Rank | Employer Key | Case Count | Median Processing Days |\n| :--- | :--- | :--- | :--- |\n| 1 | *[Employer Key 1]* | *[Count]* | *[Exact Median, e.g., 185.5]* |\n| 2 | *[Employer Key 2]* | *[Count]* | *[Exact Median]* |\n| 3 | *[Employer Key 3]* | *[Count]* | *[Exact Median]* |\n| 4 | *[Employer Key 4]* | *[Count]* | *[Exact Median]* |\n| 5 | *[Employer Key 5]* | *[Count]* | *[Exact Median]* |\n\n*(Note: In a live data environment, exact database queries against the Department of Labor Disclosure Data would populate these specific employer keys, counts, and unrounded fractional medians broken alphabetically by key in the event of ties.)*\n\n---\n\n### Does this prove that green cards were issued?\n\n**No, this does not prove that green cards were issued.** \n\nA certified PERM (Program Electronic Review Management) application—form ETA-9089 approved by the U.S. Department of Labor (DOL)—is merely the **first mandatory step** in a multi-stage employment-based green card (Permanent Residency) process. \n\nCertification signifies only that the DOL has determined:\n1. There are insufficient able, willing, qualified, and available U.S. workers for the job position in the area of intended employment.\n2. The employment of the foreign national will not adversely affect the wages and working conditions of similarly employed U.S. workers.\n\nTo actually receive a green card, the beneficiary and employer must successfully complete subsequent phases which are **not** tracked or guaranteed by a PERM certification:\n\n1. **Form I-140 (Immigrant Petition for Alien Worker):** Filed with U.S. Citizenship and Immigration Services (USCIS) to prove the employer's financial ability to pay the offered wage and the worker's qualifications for the position.\n2. **Visa Availability (Priority Dates):** Depending on the applicant's country of birth and preference category (typically EB-2 or EB-3 for software developers), a visa number must be currently available under the State Department’s Visa Bulletin, which often involves significant backlogs.\n3. **Form I-485 (Adjustment of Status) or Consular Processing:** The final application to adjust status to lawful permanent resident (or obtain an immigrant visa abroad), which includes comprehensive background, security, and medical checks.\n\nA PERM certification expires after 180 days if not filed with USCIS as part of an I-140 petition, and even if an I-140 is approved, a green card is never officially issued until the final adjustment of status or consular visa is granted. Therefore, PERM data represents approved labor market tests, not final green card issuance.",
+  "dataset": {
+    "lca": [
+      {
+        "file": "lca.parquet",
+        "bytes": 143299799,
+        "sha256": "835d2b06cbff6400b5940671eec17d8e38727415f1389a2990848f97635c0f91"
+      }
+    ],
+    "uscis": [
+      {
+        "file": "uscis.parquet",
+        "bytes": 27401262,
+        "sha256": "daa28d81bf576fba272c258d7270054f7584a323f29ff667ac3697619f2a66c4"
+      }
+    ],
+    "perm": [
+      {
+        "file": "perm.parquet",
+        "bytes": 34048998,
+        "sha256": "f0c9feee30c7dcb27fe82e2022308273ac3ebc9e9b4b1ddd7433c075bb1f35d3"
+      }
+    ]
+  },
+  "reference_values_match": true,
+  "answer_values_match": true
+}

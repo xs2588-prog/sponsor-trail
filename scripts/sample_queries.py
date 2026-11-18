@@ -2,7 +2,7 @@
 SAMPLES = [
     {
         'id': 'lca-ny-ds-2025', 'source': 'lca',
-        'question': 'In FY2025, which five employer keys had the most certified H-1B LCA cases for Data Scientists at New York City, NY worksites? Include case counts. Match SOC 15-2051 OR job titles containing data scientist. Include Certified and Certified - Withdrawn; count cases, not workers; break ties by employer_key.',
+        'question': "In FY2025, which five employer keys had the most certified H-1B LCA cases for Data Scientists where worksite_state is exactly 'NY' and worksite_city is exactly 'New York'? Include case counts. Match SOC 15-2051 OR job titles containing data scientist. Include Certified and Certified - Withdrawn; count cases, not workers; break ties by employer_key. Do not broaden the exact city filter with ILIKE.",
         'expectation': 'Five employer keys and their case counts from lca, ordered by count descending then key. These are LCA certifications, not USCIS approvals or hires.',
         'sql': """SELECT employer_key, COUNT(*) AS certified_cases
 FROM lca
@@ -25,7 +25,7 @@ ORDER BY initial_approvals DESC, employer_key LIMIT 5""",
     },
     {
         'id': 'perm-ny-software-2025', 'source': 'perm',
-        'question': 'In FY2025, which five employer keys had the most certified PERM cases for Software Developers (soc_code_2018 = 15-1252) in New York State? Include Certified and Certified - Expired. Show case counts and median processing_days; break ties by employer_key. Explain whether this proves that green cards were issued.',
+        'question': 'In FY2025, which five employer keys had the most certified PERM cases for Software Developers (soc_code_2018 = 15-1252) in New York State? Include Certified and Certified - Expired. Show case counts and the exact MEDIAN(processing_days), retaining fractional values such as .5 without casting or rounding; break ties by employer_key. Explain whether this proves that green cards were issued.',
         'expectation': 'Five employer keys, PERM certification counts and median processing days from perm. Explicitly state that PERM certification does not prove a green card was issued.',
         'sql': """SELECT employer_key, COUNT(*) AS certified_cases,
 MEDIAN(processing_days) AS median_processing_days
